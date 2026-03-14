@@ -1,0 +1,23 @@
+_caddy_complete() {
+    local cur prev cmd sites
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    cmd="${COMP_WORDS[0]}"
+
+    case "$cmd" in
+        caddy-ensite)
+            # Prioritize collabora* first, then all files
+            sites=($(find /etc/caddy/sites-available -maxdepth 1 -type f -name "collabora*" -printf "%f\n" 2>/dev/null || true))
+            mapfile -t sites < <(printf '%s\n' "${sites[@]}" "$(compgen -f -- "$cur" /etc/caddy/sites-available/ | sed 's|.*/||' | grep -v '^collabora' || true)")
+            COMPREPLY=($(compgen -W "${sites[*]}" -- "$cur"))
+            ;;
+        caddy-dissite)
+            sites=($(find /etc/caddy/sites-enabled -maxdepth 1 -type l -printf "%f\n" 2>/dev/null || true))
+            COMPREPLY=($(compgen -W "${sites[*]}" -- "$cur"))
+            ;;
+    esac
+    return 0
+}
+
+complete -F _caddy_complete caddy-ensite caddy-dissite
+
